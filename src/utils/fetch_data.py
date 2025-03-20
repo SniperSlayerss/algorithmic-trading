@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 import time
 
-def fetch_binance_klines(symbol="BTCUSDT", interval="1m", days=100):
+def fetch_binance_klines(symbol="BTCUSDT", interval="1m", days=10):
     base_url = "https://api.binance.com/api/v3/klines"
     ms_per_day = 24 * 60 * 60 * 1000
     end_time = int(time.time() * 1000)
@@ -45,5 +45,5 @@ df = fetch_binance_klines()
 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
 # Save to CSV
-df.to_csv("btc_usd_1m.csv", index=False)
+df.to_csv("../../data/btc_usd_1m.csv", index=False)
 print("Data saved to btc_usd_1m.csv")

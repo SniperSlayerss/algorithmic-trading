@@ -9,8 +9,7 @@ financial_data["ema_short"] = financial_data["close"].ewm(span=20, adjust=False)
 financial_data["ema_long"] = financial_data["close"].ewm(span=100, adjust=False).mean()
 # LSTMStrategy.save_and_train_model(financial_data)
 
-model = LSTMStrategy.load_model()
+lstm_model = LSTMStrategy()
 
-test_input = np.array(financial_data[["close", "ema_short", "ema_long"]].iloc[-51:-1])
-test_input = test_input.reshape(1, 50, 3)
-print(model.predict(test_input))
+if lstm_model is not None:
+    print(lstm_model.is_entry(financial_data))
