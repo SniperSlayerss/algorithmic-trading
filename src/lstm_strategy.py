@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 import tensorflow as tf
 from keras._tf_keras.keras import models, layers, optimizers, Input
 from sklearn.preprocessing import MinMaxScaler
@@ -46,17 +47,24 @@ class LSTMStrategy(Strategy):
     model: Optional[models.Model] = None
     scaler: Optional[MinMaxScaler] = None
 
-    def run_strategy(self, financial_data: pd.DataFrame) -> pd.DataFrame:
-        pass
+    @classmethod
+    def run_strategy(cls, financial_data: pd.DataFrame) -> pd.DataFrame:
+        lstm_strategy = cls()
+        for i in range(10):
+            split_data = financial_data.iloc[:-50 * (i + 1)]
+            print(split_data.shape)
+            print(lstm_strategy.is_entry(split_data))
 
     def is_entry(self, financial_data: pd.DataFrame) -> bool:
-        x = np.array(financial_data[["close", "ema_short", "ema_long"]].iloc[-51:-1])
+        features = financial_data[["close", "ema_short", "ema_long"]].iloc[-51:-1]
+        pct_change = features.pct_change().fillna(0)
 
         # TODO: make safer?
         if self.scaler is None:
             self.scaler = LSTMStrategy.load_scaler()
 
-        x = self.scaler.fit_transform(x)
+        x = np.array(pct_change)
+        # x = self.scaler.fit_transform(x)
         x = x.reshape(1, 50, 3)
 
         if self.model is None:
@@ -64,12 +72,12 @@ class LSTMStrategy(Strategy):
 
         y = self.model.predict(x)
 
-        print(x[0, -1])
-        print(y[0])
+        print(y)
 
         """
         Check if price is increaing
         Check if crossover is bullish
+        [close, ema_short, ema_long]
         """
         return x[0, -1, 0] < y[0, 0]
 
@@ -118,20 +126,15 @@ class LSTMStrategy(Strategy):
         )
 
         # TODO: improve data split
-        train_data = np.array(
-            financial_data[["close", "ema_short", "ema_long"]].iloc[0:2000]
-        )
-        test_data = np.array(
-            financial_data[["close", "ema_short", "ema_long"]].iloc[2000:3000]
-        )
+        features = financial_data[["close", "ema_short", "ema_long"]].iloc[0:20000]
+        training_data = np.array(features.pct_change().fillna(0))
 
         # ~~~ PREPROCESSING ~~~
         scaler = MinMaxScaler()
-        train_data = scaler.fit_transform(train_data)
-        test_data = scaler.transform(test_data)
+        # train_data = scaler.fit_transform(train_data)
 
-        x_train, y_train = create_sequences(train_data, 50)
-        x_test, y_test = create_sequences(train_data, 50)
+        x_train, y_train = create_sequences(training_data, 50)
+        x_test, y_test = create_sequences(training_data, 50)
 
         normalizer = layers.Normalization(axis=-1)
         normalizer.adapt(x_train)
@@ -156,7 +159,7 @@ class LSTMStrategy(Strategy):
         model.fit(
             x_train,
             y_train,
-            epochs=10,
+            epochs=4,
             batch_size=32,
             validation_data=(x_test, y_test),
         )

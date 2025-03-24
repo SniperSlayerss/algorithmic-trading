@@ -12,8 +12,8 @@ A Strategy should be able to...
 
 
 class Strategy(ABC):
-    @abstractmethod
-    def run_strategy(self, financial_data: pd.DataFrame) -> pd.DataFrame:
+    @classmethod
+    def run_strategy(cls, financial_data: pd.DataFrame) -> pd.DataFrame:
         """
 
         Returns

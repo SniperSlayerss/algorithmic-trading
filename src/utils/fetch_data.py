@@ -45,5 +45,5 @@ df = fetch_binance_klines()
 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
 # Save to CSV
-df.to_csv("../../data/btc_usd_1m.csv", index=False)
-print("Data saved to btc_usd_1m.csv")
+df.to_csv("../../data/btc_usd_1m_24_03_2025.csv", index=False)
+print("INFO: Data saved")
