@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Optional, Tuple
 import math
 import os
@@ -18,6 +17,7 @@ from strategy import Strategy
 
 MODEL_SAVE_PATH = "lstm/lstm_model.keras"
 SCALER_SAVE_PATH = "lstm/scaler.pkl"
+SEQ_LEN = 50
 
 
 def create_sequences(data, seq_length):
@@ -50,29 +50,36 @@ class LSTMStrategy(Strategy):
     @classmethod
     def run_strategy(cls, financial_data: pd.DataFrame) -> pd.DataFrame:
         lstm_strategy = cls()
-        for i in range(10):
-            split_data = financial_data.iloc[:-50 * (i + 1)]
-            print(split_data.shape)
-            print(lstm_strategy.is_entry(split_data))
+        entries = []
+        i = 0
+        while i < len(financial_data) - SEQ_LEN:
+            split_data = financial_data.iloc[: SEQ_LEN + i + 1]
+            if lstm_strategy.is_entry(split_data):
+                entries.append(split_data.iloc[-1])
+            i += 1
+        return entries
 
     def is_entry(self, financial_data: pd.DataFrame) -> bool:
+        if len(financial_data) < SEQ_LEN:
+            print(
+                f"ERROR: len of {len(financial_data)} is less than sequence length of {SEQ_LEN}"
+            )
+            return False
+
         features = financial_data[["close", "ema_short", "ema_long"]].iloc[-51:-1]
         pct_change = features.pct_change().fillna(0)
 
-        # TODO: make safer?
         if self.scaler is None:
             self.scaler = LSTMStrategy.load_scaler()
-
-        x = np.array(pct_change)
-        # x = self.scaler.fit_transform(x)
-        x = x.reshape(1, 50, 3)
 
         if self.model is None:
             self.model = LSTMStrategy.load_model()
 
-        y = self.model.predict(x)
+        x = np.array(pct_change)
+        # x = self.scaler.fit_transform(x)
+        x = x.reshape(1, SEQ_LEN, 3)
 
-        print(y)
+        y = self.model.predict(x, verbose=0)
 
         """
         Check if price is increaing
@@ -100,7 +107,7 @@ class LSTMStrategy(Strategy):
             print(f"INFO: Loaded '{SCALER_SAVE_PATH}'")
         except FileNotFoundError:
             print(f"ERROR: File not found '{SCALER_SAVE_PATH}'")
-            print("WARNING: Train and save the netowork before attempting to load")
+            print("WARNING: Train and save the network before attempting to load")
             sys.exit(1)
         return scaler
 
@@ -126,15 +133,20 @@ class LSTMStrategy(Strategy):
         )
 
         # TODO: improve data split
-        features = financial_data[["close", "ema_short", "ema_long"]].iloc[0:20000]
-        training_data = np.array(features.pct_change().fillna(0))
+        features = financial_data[["close", "ema_short", "ema_long"]]
+        financial_data_pct = np.array(features.pct_change().fillna(0))
 
         # ~~~ PREPROCESSING ~~~
         scaler = MinMaxScaler()
         # train_data = scaler.fit_transform(train_data)
 
-        x_train, y_train = create_sequences(training_data, 50)
-        x_test, y_test = create_sequences(training_data, 50)
+        train_size = int(0.8 * len(financial_data_pct))
+
+        train_data = financial_data_pct[:train_size]
+        x_train, y_train = create_sequences(train_data, SEQ_LEN)
+
+        test_data = financial_data_pct[train_size - SEQ_LEN :]
+        x_test, y_test = create_sequences(test_data, SEQ_LEN)
 
         normalizer = layers.Normalization(axis=-1)
         normalizer.adapt(x_train)
