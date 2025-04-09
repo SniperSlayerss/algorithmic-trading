@@ -13,10 +13,10 @@ import tensorflow as tf
 from keras._tf_keras.keras import models, layers, optimizers, Input
 from sklearn.preprocessing import MinMaxScaler
 
-from strategy import Strategy
+from strategy.strategy import Strategy
 
-MODEL_SAVE_PATH = "lstm/lstm_model.keras"
-SCALER_SAVE_PATH = "lstm/scaler.pkl"
+MODEL_SAVE_PATH = "data/lstm_model.keras"
+SCALER_SAVE_PATH = "data/scaler.pkl"
 SEQ_LEN = 50
 
 
@@ -48,7 +48,7 @@ class LSTMStrategy(Strategy):
     scaler: Optional[MinMaxScaler] = None
 
     @classmethod
-    def run_strategy(cls, financial_data: pd.DataFrame) -> pd.DataFrame:
+    def run_strategy(cls, financial_data: pd.DataFrame) -> np.ndarray:
         lstm_strategy = cls()
         entries = []
         i = 0
@@ -57,7 +57,7 @@ class LSTMStrategy(Strategy):
             if lstm_strategy.is_entry(split_data):
                 entries.append(split_data.iloc[-1])
             i += 1
-        return entries
+        return np.array(entries)
 
     def is_entry(self, financial_data: pd.DataFrame) -> bool:
         if len(financial_data) < SEQ_LEN:

@@ -1,0 +1,27 @@
+[project]
+name = "algorithmic-trading"
+version = "0.1.0"
+description = "Algorithmic trading"
+dependencies = [
+  "tensorflow",
+  "bokeh",
+  "numpy",
+  "pandas",
+  "scikit-learn"
+]
+
+requires-python = ">=3.8,<=3.12"
+
+authors = [
+  {name = "Jack Baker"}
+]
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

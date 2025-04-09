@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -13,7 +14,7 @@ A Strategy should be able to...
 
 class Strategy(ABC):
     @classmethod
-    def run_strategy(cls, financial_data: pd.DataFrame) -> pd.DataFrame:
+    def run_strategy(cls, financial_data: pd.DataFrame) -> np.ndarray:
         """
 
         Returns
